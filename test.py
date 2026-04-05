@@ -1,67 +1,78 @@
 """
 Evaluation Script
 """
+
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from torchvision.transforms import v2
 from torchvision import models
+from torchvision.transforms import v2
 
-import numpy as np
-
-from utils.config import Config
 from src.dataset import Sentinel
+from src.metric import calculate_fid, extract_features
 from src.pix2pix import Pix2Pix
-from src.metric import extract_features, calculate_fid
+from utils.config import Config
+
 
 def main():
     # Load configuration
-    config = Config('config.yaml')
+    config = Config("config.yaml")
     # Set device
-    device = torch.device(config['training']['device'])
+    device = torch.device(config["training"]["device"])
 
-    inception = models.inception_v3(weights='DEFAULT', transform_input=False).eval().to(device)
+    inception = (
+        models.inception_v3(weights="DEFAULT", transform_input=False).eval().to(device)
+    )
 
     # transforms from inception_v3 documentation
-    transform = v2.Compose([
-        v2.Resize(342),
-        v2.CenterCrop(299),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = v2.Compose(
+        [
+            v2.Resize(342),
+            v2.CenterCrop(299),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     dataset = Sentinel(
-        root_dir=config['dataset']['root_dir'],
+        root_dir=config["dataset"]["root_dir"],
         split_type="test",
-        split_mode=config['dataset']['split_mode'],
-        split_ratio=config['dataset']['split_ratio'],
-        split_file=config['dataset']['split_file'],
-        seed=config['dataset']['seed']
+        split_mode=config["dataset"]["split_mode"],
+        split_ratio=config["dataset"]["split_ratio"],
+        split_file=config["dataset"]["split_file"],
+        seed=config["dataset"]["seed"],
     )
-    
+
     dataloader = DataLoader(
         dataset,
-        batch_size=config['training']['batch_size'],
-        shuffle=config['dataset']['shuffle'],
-        num_workers=config['training']['num_workers']
+        batch_size=config["training"]["batch_size"],
+        shuffle=config["dataset"]["shuffle"],
+        num_workers=config["training"]["num_workers"],
     )
 
     # Create model
-    model = Pix2Pix(
-        c_in=config['model']['c_in'],
-        c_out=config['model']['c_out'],
-        is_train=False,
-        use_upsampling=config['model']['use_upsampling'],
-        mode=config['model']['mode'],
-    ).to(device).eval()
+    model = (
+        Pix2Pix(
+            c_in=config["model"]["c_in"],
+            c_out=config["model"]["c_out"],
+            is_train=False,
+            use_upsampling=config["model"]["use_upsampling"],
+            mode=config["model"]["mode"],
+        )
+        .to(device)
+        .eval()
+    )
 
-    gen_checkpoint = Path(config['training']['gen_checkpoint'])
+    gen_checkpoint = Path(config["training"]["gen_checkpoint"])
 
     if not gen_checkpoint.exists():
-        raise FileNotFoundError(f"Generator checkpoint file not found: {gen_checkpoint}\nPlease check config.yaml")
-    
+        raise FileNotFoundError(
+            f"Generator checkpoint file not found: {gen_checkpoint}\nPlease check config.yaml"
+        )
+
     model.load_model(gen_path=gen_checkpoint)
 
     target_features = []
@@ -69,9 +80,9 @@ def main():
 
     for real_images, target_images in dataloader:
         real_images, target_images = real_images.to(device), target_images.to(device)
-        
+
         # Pix2Pix.generate() gets a scaled tensor ([0,1]) returns a uint8 tensor ([0,255])
-        fake_images = model.generate(real_images, is_scaled=True, to_uint8=True) 
+        fake_images = model.generate(real_images, is_scaled=True, to_uint8=True)
 
         # Get target features
         target_images = (target_images * 255).to(dtype=torch.uint8)
@@ -91,6 +102,3 @@ def main():
     # Compute FID score
     fid_score = calculate_fid(real_features, generated_features)
     print(f"FID Score: {fid_score}")
-
-
-    

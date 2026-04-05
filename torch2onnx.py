@@ -2,8 +2,8 @@ from pathlib import Path
 
 import torch
 
-from utils.config import Config
 from src.pix2pix import Pix2Pix
+from utils.config import Config
 
 
 def main():

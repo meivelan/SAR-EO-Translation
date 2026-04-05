@@ -5,12 +5,11 @@ Inference Script
 from pathlib import Path
 
 import torch
+from PIL import Image
 from torchvision.transforms import v2
 
-from PIL import Image
-
-from utils.config import Config
 from src.pix2pix import Pix2Pix
+from utils.config import Config
 
 
 def main():
