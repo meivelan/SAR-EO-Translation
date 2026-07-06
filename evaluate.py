@@ -141,10 +141,10 @@ def evaluate(kw_args=defaultdict(lambda: None)):
     logging.info("\n" + "="*50 + "\n"
                  f"                EVALUATION COMPLETE               \n"
                  + "="*50 + "\n"
-                 f" FID Score  : {fid_score:.4f}  (Lower is better)\n"
-                 f" LPIPS Dist : {avg_lpips:.4f}  (Lower is better)\n"
-                 f" SSIM Index : {avg_ssim:.4f}  (Higher is better)\n"
-                 f" PSNR Ratio : {avg_psnr:.2f} dB (Higher is better)\n"
+                 f" FID Score  : {fid_score:.4f}\n"
+                 f" LPIPS Dist : {avg_lpips:.4f}\n"
+                 f" SSIM Index : {avg_ssim:.4f}\n"
+                 f" PSNR Ratio : {avg_psnr:.2f} dB\n"
                  + "="*50)
 
     # 10. Export Isolated Metrics JSON

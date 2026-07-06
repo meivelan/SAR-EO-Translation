@@ -242,6 +242,24 @@ def train(kw_args=defaultdict(lambda: None)):
 
     save_checkpoint(model, config["training"]["num_epochs"], checkpoint_dir, config)
 
+    final_epoch = config["training"]["num_epochs"]
+    print("\nRunning post-training evaluation on full validation dataset split...")
+    final_val_D, final_val_G, final_val_GAN, final_val_L1 = validate(
+        model, val_loader, device, final_epoch, tb_writer=None
+    )
+    
+    evaluation_summary = pd.DataFrame([{
+        "evaluation_timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "model_checkpoint_epoch": final_epoch,
+        "val_total_generator_loss": final_val_G,
+        "val_discriminator_loss": final_val_D,
+        "val_adversarial_gan_loss": final_val_GAN,
+        "val_structural_l1_loss": final_val_L1
+    }])
+    
+    evaluation_summary.to_csv(logs_dir / "final_validation_evaluation.csv", index=False)
+    print(f"Validation evaluation metrics saved to: {logs_dir / 'final_validation_evaluation.csv'}")
+
     if tb_writer:
         tb_writer.close()
     print(f"Training successfully complete. Items stored inside directory -> {run_dir}")
