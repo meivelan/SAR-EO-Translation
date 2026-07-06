@@ -63,7 +63,7 @@ def copy_dataset_to_kaggle_memory():
     for terrain in terrains:
         for s in ['s1', 's2']:
             files_path_new = new_dataset_path / terrain / s
-            if len(os.listdir(files_path_new)) == 10:
+            if len(os.listdir(files_path_new)) == 4000:
                 continue
             tmp = False
             print(f"{files_path_new} doesn't copied properly, contains only {len(os.listdir(files_path_new))}")
