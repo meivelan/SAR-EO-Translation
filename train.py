@@ -189,31 +189,37 @@ def train(kw_args=defaultdict(lambda: None)):
 
     model = torch.compile(model)
 
-    G_losses, D_losses, GAN_losses, L1_losses = [], [], [], []
     plotter = TrainingPlotter(plots_dir)
+    # Initialize separate lists for both training and validation
+    G_losses, D_losses, GAN_losses, L1_losses = [], [], [], []
+    val_G_losses, val_D_losses, val_GAN_losses, val_L1_losses = [], [], [], []
 
     for epoch in range(start_epoch, end_epoch):
-        # Always compute the training iteration parameters
+        # 1. Compute and safely append training data
         epoch_D_loss, epoch_G_loss, epoch_GAN_loss, epoch_L1_loss = train_epoch(
             model, train_loader, device, epoch, tb_writer
         )
-
-        if use_validation and val_loader:
-            epoch_D_loss, epoch_G_loss, epoch_GAN_loss, epoch_L1_loss = validate(
-                model, val_loader, device, epoch, tb_writer
-            )
-        
         G_losses.append(epoch_G_loss)
         D_losses.append(epoch_D_loss)
         GAN_losses.append(epoch_GAN_loss)
         L1_losses.append(epoch_L1_loss)
 
+        # 2. Compute and safely append validation data using separate variables
+        if use_validation and val_loader:
+            val_D_loss, val_G_loss, val_GAN_loss, val_L1_loss = validate(
+                model, val_loader, device, epoch, tb_writer
+            )
+            val_G_losses.append(val_G_loss)
+            val_D_losses.append(val_D_loss)
+            val_GAN_losses.append(val_GAN_loss)
+            val_L1_losses.append(val_L1_loss)
+
         if epoch % config["training"]["save_freq"] == 0:
             save_checkpoint(model, epoch, checkpoint_dir, config)
-            plotter.plot_curve(G_losses, "Generator Loss", "Loss", "generator_loss.png")
-            plotter.plot_curve(D_losses, "Discriminator Loss", "Loss", "discriminator_loss.png")
-            plotter.plot_curve(GAN_losses, "GAN Loss", "Loss", "gan_loss.png")
-            plotter.plot_curve(L1_losses, "L1 Loss", "Loss", "l1_loss.png")
+            plotter.plot_multiple([G_losses, val_G_losses], ["Training", "Validation"], "Generator Loss", "Loss", "generator_loss.png")
+            plotter.plot_multiple([D_losses, val_D_losses], ["Training", "Validation"], "Discriminator Loss", "Loss", "discriminator_loss.png")
+            plotter.plot_multiple([GAN_losses, val_GAN_losses], ["Training", "Validation"], "GAN Loss", "Loss", "gan_loss.png")
+            plotter.plot_multiple([L1_losses, val_L1_losses], ["Training", "Validation"], "L1 Loss", "Loss", "l1_loss.png")
             plotter.plot_multiple([G_losses, D_losses], ["Generator", "Discriminator"], "Generator vs Discriminator Loss", "g_d_loss.png")
 
         history = pd.DataFrame({
@@ -224,6 +230,15 @@ def train(kw_args=defaultdict(lambda: None)):
             "l1_loss": L1_losses
         })
         history.to_csv(logs_dir / "training_history.csv", index=False)
+
+        history = pd.DataFrame({
+            "epoch": range(1, len(val_G_losses) + 1),
+            "generator_loss": val_G_losses,
+            "discriminator_loss": val_D_losses,
+            "gan_loss": val_GAN_losses,
+            "l1_loss": val_L1_losses
+        })
+        history.to_csv(logs_dir / "validation_history.csv", index=False)
 
     save_checkpoint(model, config["training"]["num_epochs"], checkpoint_dir, config)
 
