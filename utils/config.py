@@ -1,8 +1,6 @@
 # utils/config.py
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
-
 import yaml
 
 
@@ -11,29 +9,26 @@ class Config:
 
     def __init__(self, config_path: str, overrides: Optional[Dict[str, Any]] = None):
         """
-        Initialize configuration from YAML file with optional overrides
+        Initialize configuration from a YAML file with optional overrides.
 
         Args:
-            config_path: Path to YAML config file
-            overrides: Optional dictionary of values to override config
+            config_path: Path to the YAML configuration file.
+            overrides: Optional dictionary of values to override the configuration.
         """
         self.config_path = Path(config_path)
         if not self.config_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
 
-        # Load config file
-        with open(config_path) as f:
-            self.config = yaml.safe_load(f)
+        # Load configuration file securely
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            self.config = yaml.safe_load(f) or {}
 
-        # Apply any overrides
+        # Apply any command-line or runtime overrides
         if overrides:
             self._override_config(overrides)
 
-        # Set up paths
-        self._setup_paths()
-
     def _override_config(self, overrides: Dict[str, Any]):
-        """Recursively override configuration values"""
+        """Recursively override configuration nested dictionary items."""
 
         def _update(d, u):
             for k, v in u.items():
@@ -45,31 +40,26 @@ class Config:
 
         _update(self.config, overrides)
 
-    def _setup_paths(self):
-        """Setup output directories and experiment naming"""
-        # Create unique experiment name if not specified
-        if not self.config["logging"]["comet"]["name"]:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.config["logging"]["comet"]["name"] = f"pix2pix_{timestamp}"
-
-        # Setup directories
-        for dir_name in ["checkpoint_dir", "results_dir"]:
-            path = Path(self.config["training"][dir_name])
-            path = path / self.config["logging"]["comet"]["name"]
-            path.mkdir(parents=True, exist_ok=True)
-            self.config["training"][dir_name] = str(path)
-
     def __getitem__(self, key):
+        """Access top-level config keys directly using brackets."""
         return self.config[key]
 
     def get(self, key, default=None):
-        """Get config value with optional default"""
+        """Get configuration values safely with an optional fallback default."""
         try:
             return self[key]
         except KeyError:
             return default
 
     def save(self, save_path: str):
-        """Save current config to file"""
-        with open(save_path, "w") as f:
+        """
+        Save the current state of the configuration properties to a file.
+        
+        Args:
+            save_path: Destination file path to dump the resolved YAML structure.
+        """
+        target_path = Path(save_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(target_path, "w", encoding="utf-8") as f:
             yaml.dump(self.config, f, default_flow_style=False)
