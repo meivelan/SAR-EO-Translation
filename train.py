@@ -220,7 +220,7 @@ def train(kw_args=defaultdict(lambda: None)):
             plotter.plot_multiple([D_losses, val_D_losses], ["Training", "Validation"], "Discriminator Loss", "discriminator_loss.png")
             plotter.plot_multiple([GAN_losses, val_GAN_losses], ["Training", "Validation"], "GAN Loss", "gan_loss.png")
             plotter.plot_multiple([L1_losses, val_L1_losses], ["Training", "Validation"], "L1 Loss", "l1_loss.png")
-            plotter.plot_multiple([G_losses, D_losses], ["Generator", "Discriminator"], "Generator vs Discriminator Loss", "g_d_loss.png")
+            plotter.plot_multiple([G_losses, D_losses, val_G_losses, val_D_losses], ["Generator Training", "Discriminator Training", "Generator Validation", "Discriminator Validation"], "Generator vs Discriminator Loss", "g_d_loss.png")
 
         history = pd.DataFrame({
             "epoch": range(1, len(G_losses) + 1),
