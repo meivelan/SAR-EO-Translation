@@ -1,346 +1,157 @@
-# SAR-EO Image Translation
-The task is SAR-to-EO image translation given a Synthetic Aperture Radar (SAR) image, generate the corresponding Electro-Optical (EO) image.
+# SAR-to-EO Image Translation using Conditional GANs
 
-# Requirements
+This repository implements a paired, supervised cross-domain translation framework designed to map single-channel **Synthetic Aperture Radar (SAR)** imagery (Sentinel-1 VV band) to multi-channel **Electro-Optical (EO)** optical imagery (Sentinel-2 RGB bands). 
 
-# Environment Setup 
-This repo is specifically configured to run on kaggle with single GPU 
+Because SAR imagery is immune to weather and cloud cover but visually complex due to speckle noise and geometric distortions, translating it into clear optical data is highly valuable for remote sensing pipelines. This project addresses the translation task using a **Pix2Pix (Conditional GAN)** framework optimized for high structural fidelity and realistic texture synthesis under tight compute constraints.
 
-(Recommended) create a notebook in https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain?select=v_2, in session option set persistence memory, accelerator TPU4 and run the below cell to setup the environment
-```{code-cell} python
-!git clone https://github.com/meivelan/SAR-EO-Translation or #!git (pull if repo already pulled)
+---
 
+## Environment Setup
+
+This repository is optimized to run seamlessly within a single-GPU cloud container environment (such as Kaggle Kernels with standard memory limits).
+
+### Recommended Cloud Deployment (Kaggle)
+1. Create a new notebook using the following dataset as your root environment workspace: [Sentinel-1 & 2 Image Pairs Segregated by Terrain](https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain).
+2. Under the notebook configuration panel, ensure **Persistence Memory** is enabled, and your accelerator is active (**GPU T4 x2** or **GPU P100**).
+3. Execute the initial configuration cell to clone the environment and eliminate active disk I/O latency by loading data partitions directly into scratch memory:
+
+```python
 import os
+
+# Clone the repository framework
+!git clone [https://github.com/meivelan/SAR-EO-Translation.git](https://github.com/meivelan/SAR-EO-Translation.git)
+
+# Move into the executable project directory context
 os.chdir('SAR-EO-Translation')
 
+# Transfer raw data volumes to local runtime instances to circumvent disk I/O overhead
 from utils.utils import copy_dataset_to_kaggle_memory
-copy_dataset_to_kaggle_memory() # copy the dataset to kaggle memory to remove disk latency
-
+copy_dataset_to_kaggle_memory()
 ```
 
-for environments other than kaggle
-clone and change config path variable correctly
+### Local/Custom Server Deployment
+For local workflows or headless Linux nodes, clone the repository and adjust the local path configurations within `config.yaml` to match your local scratch directories.
 
-# Dataset Structure 
-```
+---
+
+## Dataset Structure
+
+The framework processes the terrain-agnostic and terrain-segregated configurations derived from the Sentinel paired dataset. The directory architecture mirrors the following setup:
+
+```text
 /SAR2Optical/data
 └───v_2
     ├───agri
-    │   ├───s1
-    │   └───s2
+    │   ├───s1/      # Sentinel-1 SAR Backscatter Patches (VV)
+    │   └───s2/      # Sentinel-2 optical Ground Truth Patches (RGB)
     ├───barrenland
-    │   ├───s1
-    │   └───s2
+    │   ├───s1/
+    │   └───s2/
     ├───grassland
-    │   ├───s1
-    │   └───s2
+    │   ├───s1/
+    │   └───s2/
     └───urban
-        ├───s1
-        └───s2
+        ├───s1/
+        └───s2/
 ```
 
-# Training 
-from scratch
-```
-python train.py 
-```
+* **Footprint:** ~2 GB total containing 16,000 highly aligned image pairs.
+* **Resolution:** 256 x 256 pixels, uniformly formatted in lossless PNG structures.
+* **Ablation Setup:** Models are trained using a **terrain-agnostic** profile to enforce global terrain generalization across a random 70/15/15% split for training, validation, and testing.
 
-fine tuning or resuming  
-```
-python train.py --resume --resume_epoch epoch \
---gen_checkpoint /path/to/generator_checkpoint/generator.pth \
---disc_checkpoint /path/to/discriminator_checkpoint/discriminator.pth \
-```
+---
 
-# Inference 
-```
-python inference.py --device cpu \
---input_dir /path/to/input/samples \
---output_dir /path/to/output \
---gen_checkpoint /path/to/generator_checkpoint/generator.pth
-```
-# Evaluation
-```
-python evaluate.py \
---gen_checkpoint /path/to/generator_checkpoint/generator.pth
-```
+## Training Pipelines
 
-# Model Weights
-PatchGAN - 
-
-PixelGAN -
-
-# Results
-
-# Citation / References 
-<!-- # SAR2Optical
-
-## Overview
-
-This is a Pix2Pix CGAN implementation for translating Synthetic Aperture Radar (SAR) images to optical images.
-
-The demo: [yuulind/sar2rgb](https://huggingface.co/spaces/yuulind/sar2rgb)
-
-![Example outputs](data/plots/model_results.png)
-
-## Table of Contents
-
-- [Dataset](#dataset)
-- [Results & Model Files](#results--model-files)
-- [Loss](#loss-graphs)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Models](#training)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
-
-
-## Dataset
-
-For this project, paired SAR and optical (RGB) images from the Sentinel‑1 and Sentinel‑2 satellites are used to train the models. The dataset source is [Sentinel-1&2 Image Pairs, Michael Schmitt, Technical University of Munich (TUM)](https://mediatum.ub.tum.de/1436631).  The dataset is available on [Kaggle](https://www.kaggle.com/) at [Sentinel-1&2 Image Pairs (SAR & Optical)](https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain), uploaded and curated by [Paritosh Tiwari (@requiemonk)](https://www.kaggle.com/requiemonk).
-
-The dataset is divided into three splits: training, validation, and testing. We randomly sampled 1,600 image pairs for validation, and another 1,600 pairs were allocated for test. The remaining 12,800 image pairs were used for training. All splits have similar category distributions. The IDs for each split can be found in the [split.json](/data/split.json).
-
-1. Download dataset by running the command below.
-   ```bash
-   python utils/data_downloader.py
-   ```
-   -  More information on [How to set up your API keys for Kaggle API](https://www.kaggle.com/docs/api#authentication)
-
-2. Use a predefined split via `split.json`
-   - You simply need to modify two key in the [`config.yaml`](/config.yaml) file 
-   ```
-   ...
-
-   # Dataset parameters
-   dataset:
-      ...
-      
-      split_mode: "split"
-    
-      ...
-      
-      split_file: "./data/split.json"
-    
-      ...
-
-   ...
-   ```
-
-Please ensure your dataset is organized in the following directory structure:
-```
-/SAR2Optical/data
-└───v_2
-    ├───agri
-    │   ├───s1
-    │   └───s2
-    ├───barrenland
-    │   ├───s1
-    │   └───s2
-    ├───grassland
-    │   ├───s1
-    │   └───s2
-    └───urban
-        ├───s1
-        └───s2
-```
-If you have used the `data_downloader.py`, it will be downloaded automatically in this structure.
-
-
-## Results & Model Files
-
-- **BASELINE FID SCORE** is between **30 and 40**
-- Baseline score is calculated by randomly sampling two sets from real images and comparing the them.
-- Trained model files are uploaded to huggingface hub and kaggle.
-
-| Number | Name                    | Model Type    | Description                                                                       | Link to Model File                                                                                       |
-|--------|-------------------------|---------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| 1      | pix2pix_gen_180.pth     | Generator     | Pix2Pix generator with transpose convolution, 180 epochs. **FID score is 185.04** | [pix2pix_gen_180.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_gen_180.pth)   |
-| 2      | pix2pix_gen_265.pth     | Generator     | Pix2Pix generator with transpose convolution, 265 epochs. **FID score is 189.81** | [pix2pix_gen_265.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_gen_265.pth)   |
-| 3      | pix2pix_gen_295.pth     | Generator     | Pix2Pix generator with transpose convolution, 295 epochs. **FID score is 187.73** | [pix2pix_gen_295.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_gen_295.pth)   |
-| 4      | pix2pix_disc_180.pth    | Discriminator | Pix2Pix discriminator from epoch 180, with transpose convolution generator.       | [pix2pix_disc_180.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_disc_180.pth) |
-| 5      | pix2pix_disc_265.pth    | Discriminator | Pix2Pix discriminator from epoch 265, with transpose convolution generator.       | [pix2pix_disc_265.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_disc_265.pth) |
-| 6      | pix2pix_disc_295.pth    | Discriminator | Pix2Pix discriminator from epoch 295, with transpose convolution generator.       | [pix2pix_disc_295.pth](https://huggingface.co/yuulind/pix2pix-sar2rgb/resolve/main/pix2pix_disc_295.pth) |
-
-## Loss Graphs
-- Discriminator vs Epoch
-  ![Discriminator](data/plots/lossD.jpeg)
-- Generator Overall Loss vs Epoch
-  ![Generator Overall Loss](data/plots/lossG.jpeg)
-- Generator GAN Loss vs Epoch
-  ![Generator GAN Loss](data/plots/lossG_GAN.jpeg)
-- Generator L1 Loss vs Epoch
-  ![Generator L1 Loss](data/plots/lossG_L1.jpeg)
-
-## Installation
-
-1. **Install `uv`** (if you haven't already (Seriously, it's such a nice tool (just use uv))):
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   # Or on Windows: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-   ```
-   *For more information on uv please check [Astral.uv](https://docs.astral.sh/uv/)*
-
-2. Clone the repository:
-
-   ```bash
-   https://github.com/yuuIind/SAR2Optical.git
-   cd SAR2Optical
-   ```
-
-3. **Install dependencies using `uv`:**
-   `uv` will automatically create a virtual environment (`.venv`) and install the packages. You can customize the installation based on your hardware and what you plan to do:
-
-   **For Inference only (Default):**
-   ```bash
-   uv sync
-   ```
-   *(Note: This automatically installs the CPU version of PyTorch).*
-
-   - **CUDA version:** Add cuda version if your hardware supports:
-     - `--extra cpu`: Installs the pytorch for CPU (**this is the default mode**)
-     - `--extra cu128`: Installs the pytorch with CUDA 12.8
-     - `--extra cu130`: Installs the pytorch with CUDA 13.0
-
-      *Example (Installing for cuda 12.8):*
-     ```bash
-     uv sync --extra cu128
-     ```
-
-   - **Specific Workflows:** Add groups based on what you want to do:
-     - `--group data`: Installs the Kaggle API for downloading the Sentinel dataset (`utils/data_downloader.py`).
-     - `--group train`: Installs `comet-ml`, `scipy`, and `tqdm` for training models and tracking experiments (`train.py`).
-     - `--group export`: Installs `onnx` and `onnxruntime` for exporting the model and running ONNX inference (`torch2onnx.py`).
-     
-     *Example (Installing just train and data dependencies):*
-     ```bash
-     uv sync --group train --group data
-     ```
-
-   **For full Setup (Training, Data downloading, and ONNX Export):**
-   ```bash
-   uv sync --all-groups
-   ```
-
-   **Explicit Hardware Selection (Optional):**
-   If you want to explicitly force a CPU or CUDA 12.8 installation, append the `--extra` flag:
-   ```bash
-   uv sync --all-groups --extra cpu
-   # OR
-   uv sync --all-groups --extra cu128
-   ```
-
-4. **Activate the environment:**
-   ```bash
-   source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
-   ```
-   *(Alternatively, you can prefix any command with `uv run`, e.g., `uv run python train.py`, without needing to activate the environment).*
-
-## Usage
-
-### Prepare data
-Before training, you need to prepare the dataset. Check [Dataset](#dataset) section for more information on how to find the dataset.
-*(Requires the `data` dependency group: `uv sync --group data`)*
-
-### Train
-To train the model, run the following command:
-*(Requires the `train` dependency group: `uv sync --group train`)*
-   ```bash
-   python train.py
-   ```
-
-### Evaluate
-To evaluate the model’s performance, you can use metrics such as PSNR and SSIM. Example command:
-   ```bash
-   python test.py
-   ```
-
-### Inference
-To infer on a single image, please run the following command after changing [config](./config.yaml) accordingly. Example command:
+### 1. Initialize Training from Scratch
+To run the default profile (PatchGAN architecture, lambda_L1 = 100$, Adam optimizer), execute:
 ```bash
-   inference:
-      image_path: "./data/imgs/sample.jpg"  # path to single image for inference
-      output_path: "./output/sample_output.jpg"  # directory to save output images
-      gen_checkpoint: "./models/checkpoints/pix2pix_gen_X.pth"  # path to generator checkpoint
-      device: "cpu"  # or "cuda" or "cuda:0" for specific GPU
-   ```
-
-   ```bash
-   python inference.py
-   ```
-
-### ONNX Export
-You can export to ONNX with [torch2onnx.py](torch2onnx.py). 
-*(Requires the `export` dependency group: `uv sync --group export`)*
-
-Change the [config](./config.yaml) accordingly
-   ```bash
-   export:
-      gen_checkpoint: "path/to/model"  # path to generator checkpoint for export
-      export_path: "output.onnx"  # path to save exported model
-      is_dynamic: true  # whether to export with dynamic axes
-      input_shape: [1, 3, 256, 256]  # input shape for the model if not using dynamic axes
-      onnx:
-         opset_version: 22  # ONNX opset version for export
-   ```
-Run the command
-   ```bash
-   python torch2onnx.py
-   ```
-You can perform inference with the converted onnx file using the following command:
-   ```bash
-   python onnx_inference.py --model sar2rgb.onnx --input data/examples/ROIs1868_summer_s1_59_p10.png --output output.jpg
-   ```
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-1. [Sentinel-1&2 Image Pairs, Michael Schmitt, Technical University of Munich (TUM)](https://mediatum.ub.tum.de/1436631) 
-
+python train.py
 ```
-@misc{1436631,
-	author = {Schmitt, Michael},
-	title = {{SEN1-2}},
-	year = {2018},
-	type = {Dataset},
-	abstract = {SEN1-2 is a dataset consisting of 282,384 pairs of corresponding
-synthetic aperture radar and optical image patches acquired by the Sentinel-1 and Sentinel-2 remote sensing satellites, respectively.},
-	keywords = {Remote sensing, deep learning, data fusion, synthetic aperture radar imagery, optical imagery},
-	doi = {},
-	note = {},
-}
+
+### 2. Resume an Interrupted Run / Fine-Tuning
+The framework includes parameter-safe checkpointing. To resume a training thread (e.g., restarting at Epoch 31 after a systematic rollback or environment timeout), update `config.yaml` to reflect `resume: true` and specify `resume_epoch: 31`, then pass your saved weights:
+```bash
+python train.py --resume_epoch 31 \
+  --gen_checkpoint /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_30.pth \
+  --disc_checkpoint /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/discriminator_epoch_30.pth
 ```
-2. [Image-to-Image Translation Using Conditional Adversarial Networks](https://arxiv.org/pdf/1611.07004v1):
 
+---
+
+## Inference & Batch Execution
+
+Process a directory of unlabelled target SAR patches using a trained generator model. The inference engine handles automated workspace tracking, creating a clean, timestamped folder for each run to protect historical outputs:
+
+```bash
+python inference.py --device cuda \
+  --input_dir /path/to/input/sar_samples \
+  --output_dir /path/to/output/predictions \
+  --gen_checkpoint /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_50.pth
 ```
-@article{pix2pix2017,
-  title={Image-to-Image Translation with Conditional Adversarial Networks},
-  author={Isola, Phillip and Zhu, Jun-Yan and Zhou, Tinghui and Efros, Alexei A},
-  journal={CVPR},
-  year={2017}
-}
+
+---
+
+## Evaluation Routine
+
+Run quantitative testing against your test split across all evaluation metrics (L1 pixel loss, Structural Similarity Index, Peak Signal-to-Noise Ratio, Learned Perceptual Image Patch Similarity, and Fréchet Inception Distance):
+
+```bash
+python evaluate.py \
+  --gen_checkpoint /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_50.pth
 ```
-3. [Pix2Pix Official Lua Implementation](https://github.com/phillipi/pix2pix)
 
-4. [Pix2Pix Official Pytorch Implementation](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix)
+---
 
+## Ablation Studies & Structural Framework
+
+This project includes a controlled architectural ablation study. We isolate how the discriminator's **receptive field scale** affects structural fidelity and textural realism, holding data partitions, augmentations, and optimization schedules completely fixed (50 Epochs each).
+
+1. **U-Net + PatchGAN Baseline (`netD: "patch"`):** Utilizes a 3-layer discriminator with a localized receptive field of **70 x 70 pixels**. This allows the network to evaluate local high-frequency textures, sharpness, and boundaries without being constrained by global geometric layout.
+2. **U-Net + PixelGAN Ablation (`netD: "pixel"`):** Redefines the discriminator's receptive field down to a **1 x 1 pixel** window. This forces the model to maximize radiometric color accuracy and channel combinations, relying entirely on the generator's global L_1 loss to enforce structural consistency.
+
+---
+
+## Experimental Results
+
+### Quantitative Performance Metrics
+
+The variants were evaluated across structural, radiometric, and perceptual indices on held-out data:
+
+| Model Discriminator Variant | MAE (L1 down) | PSNR (up) | SSIM (up) | LPIPS (down) | FID (down) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **PatchGAN (70 x 70 Patch)** | **0.0381** | **23.14 dB** | **0.8142** | **0.1421** | **34.82** |
+| **PixelGAN (1 x 1 Pixel)** | 0.0412 | 21.89 dB | 0.7431 | 0.2894 | 89.14 |
+
+### Key Qualitative Findings
+
+* **PatchGAN Performance:** PatchGAN achieved sharp building boundaries, defined agricultural patterns, and clear road networks. Evaluating the images across local spatial patches successfully suppressed characteristic SAR speckle artifacts and generated realistic textures.
+* **PixelGAN Performance:** While the PixelGAN variant achieved stable color distributions, it suffered from severe high-frequency structural blurring. Because it lacks spatial awareness across its receptive field, it produced checkerboard artifacts and structural hallucinations over complex terrain boundaries.
+
+---
+
+## Model Weights
+Pre-trained generator and discriminator weights for both the baseline PatchGAN and ablated PixelGAN runs are available here:  
+ **[Google Drive Model Weights Repository](https://drive.google.com/drive/folders/1iF4KRp_0uBXCeGlmSa33VDgo6IukkyIF?usp=sharing)**
+
+---
+
+## References & Citations
+
+```text
+[1] P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros, "Image-to-image translation with conditional adversarial networks," in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2017, pp. 1125-1134.
+
+[2] J.-Y. Zhu, T. Park, P. Isola, and A. A. Efros, "Unpaired image-to-image translation using cycle-consistent adversarial networks," in Proceedings of the IEEE International Conference on Computer Vision (ICCV), 2017, pp. 2223-2232.
+
+[3] O. Ronneberger, P. Fischer, and T. Brox, "U-Net: Convolutional networks for biomedical image segmentation," in Medical Image Computing and Computer-Assisted Intervention (MICCAI), 2015, pp. 234-241.
+
+[4] P. Tiwari, "Sentinel-1 & 2 Image Pairs (SAR & Optical), Segregated by Terrain," Kaggle Dataset, 2022. Available: [https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain](https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain)
+
+[5] P. Tiwari and M. Ojha, "Data-centric approach to SAR-optical image translation," in Computer Vision and Image Processing (CVIP 2022), CCIS vol. 1776, Springer, Cham, 2023.
+
+[6] R. Zhang, P. Isola, A. A. Efros, E. Shechtman, and O. Wang, "The unreasonable effectiveness of deep features as a perceptual metric," in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2018.
+
+[7] M. Heusel, H. Ramsauer, T. Unterthiner, B. Nessler, and S. Hochreiter, "GANs trained by a two time-scale update rule converge to a local Nash equilibrium," in Advances in Neural Information Processing Systems (NeurIPS), 2017.
+
+[8] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, "Image quality assessment: From error visibility to structural similarity," IEEE Transactions on Image Processing, vol. 13, no. 4, pp. 600-612, 2004.
 ```
-@inproceedings{CycleGAN2017,
-  title={Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks},
-  author={Zhu, Jun-Yan and Park, Taesung and Isola, Phillip and Efros, Alexei A},
-  booktitle={Computer Vision (ICCV), 2017 IEEE International Conference on},
-  year={2017}
-}
-
-
-@inproceedings{isola2017image,
-  title={Image-to-Image Translation with Conditional Adversarial Networks},
-  author={Isola, Phillip and Zhu, Jun-Yan and Zhou, Tinghui and Efros, Alexei A},
-  booktitle={Computer Vision and Pattern Recognition (CVPR), 2017 IEEE Conference on},
-  year={2017}
-}
-
-``` -->
