@@ -1,0 +1,9 @@
+2026-07-08 08:42:11,346 - INFO - Logging initialized. Writing logs to: /kaggle/working/runs/experiments/run_20260707_132855/inference/visual_grid_20260708_084211/visualize_inference.log
+2026-07-08 08:42:11,346 - INFO - Resolved Root Run Folder Location: /kaggle/working/runs/experiments/run_20260707_132855
+2026-07-08 08:42:11,346 - INFO - Created Visual Workspace Directory: /kaggle/working/runs/experiments/run_20260707_132855/inference/visual_grid_20260708_084211
+2026-07-08 08:42:11,778 - INFO - Successfully loaded 5 random test samples from split.
+2026-07-08 08:42:12,646 - INFO - Loaded network weight mapping matrix from path: /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_30.pth
+2026-07-08 08:42:12,646 - INFO - Processing 5 images through generator execution layers...
+2026-07-08 08:42:13,488 - INFO - Building 3x5 subplot layout canvas...
+2026-07-08 08:42:16,490 - INFO - Visual matrix export mapping complete! Plot saved to -> /kaggle/working/runs/experiments/run_20260707_132855/inference/visual_grid_20260708_084211/inference_grid.png
+2026-07-08 08:42:16,491 - INFO - Visual grid metadata summary file logged to -> /kaggle/working/runs/experiments/run_20260707_132855/inference/visual_grid_20260708_084211/visualize_results.json

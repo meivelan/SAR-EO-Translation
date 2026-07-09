@@ -1,4 +1,79 @@
-# SAR2Optical
+# SAR-EO Image Translation
+The task is SAR-to-EO image translation given a Synthetic Aperture Radar (SAR) image, generate the corresponding Electro-Optical (EO) image.
+
+# Requirements
+
+# Environment Setup 
+This repo is specifically configured to run on kaggle with single GPU 
+
+(Recommended) create a notebook in https://www.kaggle.com/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain?select=v_2, in session option set persistence memory, accelerator TPU4 and run the below cell to setup the environment
+```{code-cell} python
+!git clone https://github.com/meivelan/SAR-EO-Translation or #!git (pull if repo already pulled)
+
+import os
+os.chdir('SAR-EO-Translation')
+
+from utils.utils import copy_dataset_to_kaggle_memory
+copy_dataset_to_kaggle_memory() # copy the dataset to kaggle memory to remove disk latency
+
+```
+
+for environments other than kaggle
+clone and change config path variable correctly
+
+# Dataset Structure 
+```
+/SAR2Optical/data
+└───v_2
+    ├───agri
+    │   ├───s1
+    │   └───s2
+    ├───barrenland
+    │   ├───s1
+    │   └───s2
+    ├───grassland
+    │   ├───s1
+    │   └───s2
+    └───urban
+        ├───s1
+        └───s2
+```
+
+# Training 
+from scratch
+```
+python train.py 
+```
+
+fine tuning or resuming  
+```
+python train.py --resume --resume_epoch epoch \
+--gen_checkpoint /path/to/generator_checkpoint/generator.pth \
+--disc_checkpoint /path/to/discriminator_checkpoint/discriminator.pth \
+```
+
+# Inference 
+```
+python inference.py --device cpu \
+--input_dir /path/to/input/samples \
+--output_dir /path/to/output \
+--gen_checkpoint /path/to/generator_checkpoint/generator.pth
+```
+# Evaluation
+```
+python evaluate.py \
+--gen_checkpoint /path/to/generator_checkpoint/generator.pth
+```
+
+# Model Weights
+PatchGAN - 
+
+PixelGAN -
+
+# Results
+
+# Citation / References 
+<!-- # SAR2Optical
 
 ## Overview
 
@@ -268,4 +343,4 @@ synthetic aperture radar and optical image patches acquired by the Sentinel-1 an
   year={2017}
 }
 
-```
+``` -->

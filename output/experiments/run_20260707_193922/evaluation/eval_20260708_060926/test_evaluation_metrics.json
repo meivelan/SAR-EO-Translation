@@ -1,0 +1,13 @@
+{
+    "evaluation_timestamp": "20260708_060926",
+    "split_evaluated": "test",
+    "ablation_is_CGAN": true,
+    "ablation_use_gan": true,
+    "lambda_L1": 100.0,
+    "fid": 1150.1112989936414,
+    "lpips": 0.8503980811436971,
+    "ssim": 0.22937039256095887,
+    "psnr": 12.328823432922363,
+    "batch_size": 32,
+    "checkpoint_evaluated": "/kaggle/working/runs/experiments/run_20260707_193922/checkpoints/generator_epoch_40.pth"
+}
