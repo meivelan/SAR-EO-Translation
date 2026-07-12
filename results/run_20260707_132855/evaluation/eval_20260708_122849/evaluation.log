@@ -1,0 +1,38 @@
+2026-07-08 12:28:49,344 - INFO - Logging initialized. Writing logs to: /kaggle/working/runs/experiments/run_20260707_132855/evaluation/eval_20260708_122849/evaluation.log
+2026-07-08 12:28:49,344 - INFO - Resolved Root Run Directory: /kaggle/working/runs/experiments/run_20260707_132855
+2026-07-08 12:28:49,344 - INFO - Created Evaluation Session Directory: /kaggle/working/runs/experiments/run_20260707_132855/evaluation/eval_20260708_122849
+2026-07-08 12:28:49,345 - INFO - Autodetected Model State -> is_CGAN: True | use_gan (Loss Ablation): True
+2026-07-08 12:28:49,345 - INFO - Running evaluation on device: cuda
+2026-07-08 12:28:49,345 - INFO - Loading evaluation backbones (InceptionV3 & LPIPS)...
+2026-07-08 12:28:50,844 - INFO - 
+--- Starting Evaluation for Split: [VAL] ---
+2026-07-08 12:28:52,135 - INFO - Weights loaded successfully for val from: /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_15.pth
+2026-07-08 12:28:52,135 - INFO - Starting evaluation metrics collection on val split...
+2026-07-08 12:29:34,677 - INFO - Processing aggregated metrics...
+2026-07-08 12:29:35,761 - INFO - 
+==================================================
+          EVALUATION COMPLETE [VAL]          
+==================================================
+ Inherited Model Setup: is_CGAN=True, use_gan=True
+ FID Score            : 1071.4170
+ LPIPS Dist           : 0.7142
+ SSIM Index           : 0.1841
+ PSNR Ratio           : 11.32 dB
+==================================================
+2026-07-08 12:29:35,762 - INFO - Isolated evaluation metrics stored at -> /kaggle/working/runs/experiments/run_20260707_132855/evaluation/eval_20260708_122849/val_evaluation_metrics.json
+2026-07-08 12:29:35,762 - INFO - 
+--- Starting Evaluation for Split: [TEST] ---
+2026-07-08 12:29:37,158 - INFO - Weights loaded successfully for test from: /kaggle/working/runs/experiments/run_20260707_132855/checkpoints/generator_epoch_15.pth
+2026-07-08 12:29:37,158 - INFO - Starting evaluation metrics collection on test split...
+2026-07-08 12:30:20,473 - INFO - Processing aggregated metrics...
+2026-07-08 12:30:21,546 - INFO - 
+==================================================
+          EVALUATION COMPLETE [TEST]          
+==================================================
+ Inherited Model Setup: is_CGAN=True, use_gan=True
+ FID Score            : 1071.3853
+ LPIPS Dist           : 0.7155
+ SSIM Index           : 0.1858
+ PSNR Ratio           : 11.31 dB
+==================================================
+2026-07-08 12:30:21,546 - INFO - Isolated evaluation metrics stored at -> /kaggle/working/runs/experiments/run_20260707_132855/evaluation/eval_20260708_122849/test_evaluation_metrics.json
