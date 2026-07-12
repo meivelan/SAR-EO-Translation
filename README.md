@@ -155,3 +155,7 @@ Pre-trained generator and discriminator weights for both the baseline PatchGAN a
 
 [8] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, "Image quality assessment: From error visibility to structural similarity," IEEE Transactions on Image Processing, vol. 13, no. 4, pp. 600-612, 2004.
 ```
+
+## Kaggle Notebooks:
+- https://www.kaggle.com/code/meivelan/sar-eo-v2/edit
+- https://www.kaggle.com/code/meivelan/sample-run-for-patch-schedule/edit 
